@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unendliche Witze und Memes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #ff6347;
+        }
+        .container {
+            margin: 20px auto;
+            width: 80%;
+        }
+        .joke-box, .meme-box {
+            background-color: #ffebcd;
+            border: 2px solid #ff6347;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .joke-box button, .meme-box button {
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .joke-box button:hover, .meme-box button:hover {
+            background-color: #ff4500;
+        }
+        .meme-container img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+            margin-top: 10px;
+        }
+        .saved-jokes {
+            margin-top: 30px;
+        }
+        .saved-jokes ul {
+            list-style: none;
+            padding: 0;
+        }
+        .saved-jokes li {
+            background-color: #fff8dc;
+            border: 1px solid #ff6347;
+            border-radius: 5px;
+            margin: 5px auto;
+            padding: 10px;
+            text-align: left;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Unendliche Witze und Memes</h1>
+    <div class="container">
+        <!-- Witz-Box -->
+        <div class="joke-box">
+            <h2>Witze</h2>
+            <p id="joke">Klicke auf "Neuer Witz"!</p>
+            <button onclick="getNewJoke()">Neuer Witz</button>
+            <button onclick="saveJoke()">Speichern</button>
+        </div>
+
+        <!-- Meme-Box -->
+        <div class="meme-box">
+            <h2>Memes</h2>
+            <div id="meme-container" class="meme-container">
+                <!-- Memes werden dynamisch geladen -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Gespeicherte Witze -->
+    <div class="saved-jokes">
+        <h2>Gespeicherte Witze</h2>
+        <ul id="saved-jokes-list">
+            <!-- Gespeicherte Witze erscheinen hier -->
+        </ul>
+    </div>
+
+    <script>
+        const usedJokes = new Set();
+        const jokeAPI = "https://v2.jokeapi.dev/joke/Any?lang=de&type=single";
+        const memeAPI = "https://meme-api.herokuapp.com/gimme/5"; // Alternative Meme-API
+        let savedJokes = JSON.parse(localStorage.getItem("savedJokes")) || [];
+
+        // Witz abrufen
+        async function getNewJoke() {
+            try {
+                let joke = "";
+                do {
+                    const response = await fetch(jokeAPI);
+                    const data = await response.json();
+                    joke = data.joke;
+                } while (usedJokes.has(joke)); // Solange Witz schon gezeigt wurde, hole neuen
+                usedJokes.add(joke);
+                document.getElementById("joke").innerText = joke;
+            } catch (error) {
+                console.error("Fehler beim Laden des Witzes:", error);
+                document.getElementById("joke").innerText = "Witz konnte nicht geladen werden.";
+            }
+        }
+
+        // Witz speichern
+        function saveJoke() {
+            const joke = document.getElementById("joke").innerText;
+            if (joke && !savedJokes.includes(joke)) {
+                savedJokes.push(joke);
+                localStorage.setItem("savedJokes", JSON.stringify(savedJokes));
+                updateSavedJokes();
+            }
+        }
+
+        // Gespeicherte Witze aktualisieren
+        function updateSavedJokes() {
+            const list = document.getElementById("saved-jokes-list");
+            list.innerHTML = ""; // Liste leeren
+            savedJokes.forEach((joke) => {
+                const listItem = document.createElement("li");
+                listItem.innerText = joke;
+                list.appendChild(listItem);
+            });
+        }
+
+        // Memes abrufen und dynamisch laden
+        async function loadMemes() {
+            try {
+                const response = await fetch(memeAPI);
+                const data = await response.json();
+                const memeContainer = document.getElementById("meme-container");
+                data.memes.forEach((meme) => {
+                    const img = document.createElement("img");
+                    img.src = meme.url;
+                    img.alt = "Meme";
+                    memeContainer.appendChild(img);
+                });
+            } catch (error) {
+                console.error("Fehler beim Laden der Memes:", error);
+            }
+        }
+
+        // Unendliches Scrollen für Memes
+        window.addEventListener("scroll", () => {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+                loadMemes();
+            }
+        });
+
+        // Initialer Aufruf
+        getNewJoke();
+        updateSavedJokes();
+        loadMemes();
+    </script>
+</body>
+</html>
